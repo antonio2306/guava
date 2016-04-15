@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -46,7 +45,6 @@ import javax.annotation.Nullable;
  * @author Kevin Bourrillion
  * @author Louis Wasserman
  */
-@CheckReturnValue
 @GwtCompatible
 abstract class AbstractMultiset<E> extends AbstractCollection<E> implements Multiset<E> {
   // Query Operations
@@ -88,7 +86,7 @@ abstract class AbstractMultiset<E> extends AbstractCollection<E> implements Mult
     add(element, 1);
     return true;
   }
-  
+
   @CanIgnoreReturnValue
   @Override
   public int add(@Nullable E element, int occurrences) {

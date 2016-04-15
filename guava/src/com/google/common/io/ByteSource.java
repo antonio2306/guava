@@ -16,7 +16,7 @@ package com.google.common.io;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.io.ByteStreams.BUF_SIZE;
+import static com.google.common.io.ByteStreams.createBuffer;
 import static com.google.common.io.ByteStreams.skipUpTo;
 
 import com.google.common.annotations.Beta;
@@ -28,6 +28,7 @@ import com.google.common.hash.Funnels;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -207,7 +208,7 @@ public abstract class ByteSource {
     closer = Closer.create();
     try {
       InputStream in = closer.register(openStream());
-      return countByReading(in);
+      return ByteStreams.exhaust(in);
     } catch (Throwable e) {
       throw closer.rethrow(e);
     } finally {
@@ -228,22 +229,15 @@ public abstract class ByteSource {
     return count;
   }
 
-  private long countByReading(InputStream in) throws IOException {
-    long count = 0;
-    long read;
-    while ((read = in.read(ByteStreams.skipBuffer)) != -1) {
-      count += read;
-    }
-    return count;
-  }
-
   /**
    * Copies the contents of this byte source to the given {@code OutputStream}. Does not close
    * {@code output}.
    *
+   * @return the number of bytes copied
    * @throws IOException if an I/O error occurs in the process of reading from this source or
    *     writing to {@code output}
    */
+  @CanIgnoreReturnValue
   public long copyTo(OutputStream output) throws IOException {
     checkNotNull(output);
 
@@ -261,9 +255,11 @@ public abstract class ByteSource {
   /**
    * Copies the contents of this byte source to the given {@code ByteSink}.
    *
+   * @return the number of bytes copied
    * @throws IOException if an I/O error occurs in the process of reading from this source or
    *     writing to {@code sink}
    */
+  @CanIgnoreReturnValue
   public long copyTo(ByteSink sink) throws IOException {
     checkNotNull(sink);
 
@@ -306,6 +302,7 @@ public abstract class ByteSource {
    * @since 16.0
    */
   @Beta
+  @CanIgnoreReturnValue // some processors won't return a useful result
   public <T> T read(ByteProcessor<T> processor) throws IOException {
     checkNotNull(processor);
 
@@ -341,19 +338,19 @@ public abstract class ByteSource {
   public boolean contentEquals(ByteSource other) throws IOException {
     checkNotNull(other);
 
-    byte[] buf1 = new byte[BUF_SIZE];
-    byte[] buf2 = new byte[BUF_SIZE];
+    byte[] buf1 = createBuffer();
+    byte[] buf2 = createBuffer();
 
     Closer closer = Closer.create();
     try {
       InputStream in1 = closer.register(openStream());
       InputStream in2 = closer.register(other.openStream());
       while (true) {
-        int read1 = ByteStreams.read(in1, buf1, 0, BUF_SIZE);
-        int read2 = ByteStreams.read(in2, buf2, 0, BUF_SIZE);
+        int read1 = ByteStreams.read(in1, buf1, 0, buf1.length);
+        int read2 = ByteStreams.read(in2, buf2, 0, buf2.length);
         if (read1 != read2 || !Arrays.equals(buf1, buf2)) {
           return false;
-        } else if (read1 != BUF_SIZE) {
+        } else if (read1 != buf1.length) {
           return true;
         }
       }
@@ -598,6 +595,7 @@ public abstract class ByteSource {
       return length;
     }
 
+    @SuppressWarnings("CheckReturnValue") // it doesn't matter what processBytes returns here
     @Override
     public <T> T read(ByteProcessor<T> processor) throws IOException {
       processor.processBytes(bytes, offset, length);

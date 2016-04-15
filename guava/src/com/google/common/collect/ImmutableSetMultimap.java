@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -50,7 +49,6 @@ import javax.annotation.Nullable;
  * @author Mike Ward
  * @since 2.0
  */
-@CheckReturnValue
 @GwtCompatible(serializable = true, emulated = true)
 public class ImmutableSetMultimap<K, V> extends ImmutableMultimap<K, V>
     implements SetMultimap<K, V> {
@@ -437,9 +435,7 @@ public class ImmutableSetMultimap<K, V> extends ImmutableMultimap<K, V>
   @Override
   public ImmutableSet<Entry<K, V>> entries() {
     ImmutableSet<Entry<K, V>> result = entries;
-    return result == null
-        ? (entries = new EntrySet<K, V>(this))
-        : result;
+    return result == null ? (entries = new EntrySet<K, V>(this)) : result;
   }
 
   private static final class EntrySet<K, V> extends ImmutableSet<Entry<K, V>> {

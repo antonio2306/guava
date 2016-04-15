@@ -3287,9 +3287,8 @@ class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V> 
               if (e.getValueReference().isActive()) {
                 K key = e.getKey();
                 V value = e.getValueReference().get();
-                RemovalCause cause = (key == null || value == null)
-                    ? RemovalCause.COLLECTED
-                    : RemovalCause.EXPLICIT;
+                RemovalCause cause =
+                    (key == null || value == null) ? RemovalCause.COLLECTED : RemovalCause.EXPLICIT;
                 enqueueNotification(
                     key, e.getHash(), value, e.getValueReference().getWeight(), cause);
               }
@@ -4531,7 +4530,9 @@ class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V> 
 
     @Override
     public V setValue(V newValue) {
-      throw new UnsupportedOperationException();
+      V oldValue = put(key, newValue);
+      value = newValue; // only if put succeeds
+      return oldValue;
     }
 
     @Override

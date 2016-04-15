@@ -37,9 +37,24 @@ import java.util.Iterator;
 import javax.annotation.Nullable;
 
 /**
- * An immutable value object capturing some basic statistics about a collection of double values.
- * Build instances with {@link #of} or {@link StatsAccumulator#snapshot}. If you only want to
- * calculate the mean of a dataset, use {@link #meanOf} instead.
+ * A bundle of statistical summary values -- sum, count, mean/average, min and max, and several
+ * forms of variance -- that were computed from a single set of zero or more floating-point values.
+ *
+ * <p>There are two ways to obtain a {@code Stats} instance:
+ *
+ * <ul>
+ * <li>If all the values you want to summarize are already known, use the appropriate {@code
+ *     Stats.of} factory method below. Primitive arrays, iterables and iterators of any kind of
+ *     {@code Number}, and primitive varargs are supported.
+ * <li>Or, to avoid storing up all the data first, create a {@link StatsAccumulator} instance, feed
+ *     values to it as you get them, then call {@link StatsAccumulator#snapshot}.
+ * </ul>
+ *
+ * <p>Static convenience methods called {@code meanOf} are also provided for users who wish to
+ * calculate <i>only</i> the mean.
+ *
+ * <p><b>Java 8 users:</b> If you are not using any of the variance statistics, you may wish to use
+ * built-in JDK libraries instead of this class.
  *
  * @author Pete Gillin
  * @author Kevin Bourrillion
@@ -349,13 +364,17 @@ public final class Stats implements Serializable {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("count", count)
-        .add("mean", mean)
-        .add("populationStandardDeviation", populationStandardDeviation())
-        .add("min", min)
-        .add("max", max)
-        .toString();
+    if (count() > 0) {
+      return MoreObjects.toStringHelper(this)
+          .add("count", count)
+          .add("mean", mean)
+          .add("populationStandardDeviation", populationStandardDeviation())
+          .add("min", min)
+          .add("max", max)
+          .toString();
+    } else {
+      return MoreObjects.toStringHelper(this).add("count", count).toString();
+    }
   }
 
   double sumOfSquaresOfDeltas() {

@@ -35,7 +35,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.RandomAccess;
 
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -51,13 +50,12 @@ import javax.annotation.Nullable;
  * @author Kevin Bourrillion
  * @since 2.0
  */
-@CheckReturnValue
 @GwtCompatible(serializable = true, emulated = true)
 @SuppressWarnings("serial") // we're overriding default serialization
 public abstract class ImmutableList<E> extends ImmutableCollection<E>
     implements List<E>, RandomAccess {
   /**
-   * Returns the empty immutable list. This set behaves and performs comparably
+   * Returns the empty immutable list. This list behaves and performs comparably
    * to {@link Collections#emptyList}, and is preferable mainly for consistency
    * and maintainability of your code.
    */

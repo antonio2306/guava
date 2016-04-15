@@ -23,22 +23,20 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.testing.EqualsTester;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 /**
- * Tests for {@link IncidenceSetUndirectedGraph} with default graph configuration.
- *
- * @see GraphConfig
+ * Tests for a directed {@link ConfigurableNetwork} with default graph properties.
  */
 @RunWith(JUnit4.class)
-public class IncidenceSetUndirectedGraphTest extends IncidenceSetSimpleUndirectedGraphTest {
+public class ConfigurableDirectedNetworkTest extends ConfigurableSimpleDirectedNetworkTest {
+
   @Override
-  public UndirectedGraph<Integer, String> createGraph() {
-    return Graphs.createUndirected();
+  public MutableNetwork<Integer, String> createGraph() {
+    return NetworkBuilder.directed().build();
   }
 
   @Test
@@ -78,43 +76,42 @@ public class IncidenceSetUndirectedGraphTest extends IncidenceSetSimpleUndirecte
   @Test
   public void edgesConnecting_selfLoop() {
     addEdge(E11, N1, N1);
-    assertThat(undirectedGraph.edgesConnecting(N1, N1)).containsExactly(E11);
+    assertThat(graph.edgesConnecting(N1, N1)).containsExactly(E11);
     addEdge(E12, N1, N2);
-    assertThat(undirectedGraph.edgesConnecting(N1, N2)).containsExactly(E12);
-    assertThat(undirectedGraph.edgesConnecting(N2, N1)).containsExactly(E12);
-    assertThat(undirectedGraph.edgesConnecting(N1, N1)).containsExactly(E11);
+    assertThat(graph.edgesConnecting(N1, N2)).containsExactly(E12);
+    assertThat(graph.edgesConnecting(N1, N1)).containsExactly(E11);
   }
 
   @Test
   public void inEdges_selfLoop() {
     addEdge(E11, N1, N1);
-    assertThat(undirectedGraph.inEdges(N1)).containsExactly(E11);
-    addEdge(E12, N1, N2);
-    assertThat(undirectedGraph.inEdges(N1)).containsExactly(E11, E12);
+    assertThat(graph.inEdges(N1)).containsExactly(E11);
+    addEdge(E41, N4, N1);
+    assertThat(graph.inEdges(N1)).containsExactly(E11, E41);
   }
 
   @Test
   public void outEdges_selfLoop() {
     addEdge(E11, N1, N1);
-    assertThat(undirectedGraph.outEdges(N1)).containsExactly(E11);
-    addEdge(E12, N2, N1);
-    assertThat(undirectedGraph.outEdges(N1)).containsExactly(E11, E12);
+    assertThat(graph.outEdges(N1)).containsExactly(E11);
+    addEdge(E12, N1, N2);
+    assertThat(graph.outEdges(N1)).containsExactly(E11, E12);
   }
 
   @Test
   public void predecessors_selfLoop() {
     addEdge(E11, N1, N1);
-    assertThat(undirectedGraph.predecessors(N1)).containsExactly(N1);
-    addEdge(E12, N1, N2);
-    assertThat(undirectedGraph.predecessors(N1)).containsExactly(N1, N2);
+    assertThat(graph.predecessors(N1)).containsExactly(N1);
+    addEdge(E41, N4, N1);
+    assertThat(graph.predecessors(N1)).containsExactly(N1, N4);
   }
 
   @Test
   public void successors_selfLoop() {
     addEdge(E11, N1, N1);
-    assertThat(undirectedGraph.successors(N1)).containsExactly(N1);
-    addEdge(E12, N2, N1);
-    assertThat(undirectedGraph.successors(N1)).containsExactly(N1, N2);
+    assertThat(graph.successors(N1)).containsExactly(N1);
+    addEdge(E12, N1, N2);
+    assertThat(graph.successors(N1)).containsExactly(N1, N2);
   }
 
   @Test
@@ -128,17 +125,29 @@ public class IncidenceSetUndirectedGraphTest extends IncidenceSetSimpleUndirecte
   @Test
   public void inDegree_selfLoop() {
     addEdge(E11, N1, N1);
-    assertEquals(1, undirectedGraph.inDegree(N1));
-    addEdge(E12, N1, N2);
-    assertEquals(2, undirectedGraph.inDegree(N1));
+    assertEquals(1, graph.inDegree(N1));
+    addEdge(E41, N4, N1);
+    assertEquals(2, graph.inDegree(N1));
   }
 
   @Test
   public void outDegree_selfLoop() {
     addEdge(E11, N1, N1);
-    assertEquals(1, undirectedGraph.outDegree(N1));
-    addEdge(E12, N2, N1);
-    assertEquals(2, undirectedGraph.outDegree(N1));
+    assertEquals(1, graph.outDegree(N1));
+    addEdge(E12, N1, N2);
+    assertEquals(2, graph.outDegree(N1));
+  }
+
+  @Test
+  public void source_selfLoop() {
+    addEdge(E11, N1, N1);
+    assertEquals(N1, graph.source(E11));
+  }
+
+  @Test
+  public void target_selfLoop() {
+    addEdge(E11, N1, N1);
+    assertEquals(N1, graph.target(E11));
   }
 
   @Override
@@ -207,27 +216,5 @@ public class IncidenceSetUndirectedGraphTest extends IncidenceSetSimpleUndirecte
     assertTrue(graph.removeEdge(E11));
     assertThat(graph.edges()).doesNotContain(E11);
     assertThat(graph.edgesConnecting(N1, N1)).isEmpty();
-  }
-
-  // TODO(kak): Can't we ditch this and just use PackageSanityTests?
-  @Test
-  public void testEquals() {
-    UndirectedGraph<Integer, String> graphA = createGraph();
-    graphA.addNode(N1);
-    UndirectedGraph<Integer, String> graphB = createGraph();
-    graphA.addNode(N2);
-
-    new EqualsTester()
-        .addEqualityGroup(graphA)
-        .addEqualityGroup(graphB)
-        .testEquals();
-  }
-
-  @Test
-  public void toString_selfLoop() {
-    addEdge(E11, N1, N1);
-    assertThat(graph.toString()).isEqualTo(String.format(
-        "config: %s, nodes: %s, edges: {%s=[%s]}",
-        graph.config(), graph.nodes(), E11, N1));
   }
 }

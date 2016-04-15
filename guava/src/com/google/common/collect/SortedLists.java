@@ -25,7 +25,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.RandomAccess;
 
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -38,7 +37,6 @@ import javax.annotation.Nullable;
  *
  * @author Louis Wasserman
  */
-@CheckReturnValue
 @GwtCompatible
 @Beta final class SortedLists {
   private SortedLists() {}
@@ -281,8 +279,9 @@ import javax.annotation.Nullable;
       } else if (c > 0) {
         lower = middle + 1;
       } else {
-        return lower + presentBehavior.resultIndex(
-            comparator, key, list.subList(lower, upper + 1), middle - lower);
+        return lower
+            + presentBehavior.resultIndex(
+                comparator, key, list.subList(lower, upper + 1), middle - lower);
       }
     }
     return absentBehavior.resultIndex(lower);

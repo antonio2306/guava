@@ -20,8 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.base.Equivalence;
 import com.google.common.base.Function;
-import com.google.common.collect.MapMaker.RemovalCause;
-import com.google.common.collect.MapMaker.RemovalListener;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -63,6 +62,7 @@ class ComputingConcurrentHashMap<K, V> extends MapMakerInternalMap<K, V> {
     return (ComputingSegment<K, V>) super.segmentFor(hash);
   }
 
+  @CanIgnoreReturnValue
   V getOrCompute(K key) throws ExecutionException {
     int hash = hash(checkNotNull(key));
     return segmentFor(hash).getOrCompute(key, hash, computingFunction);
@@ -84,7 +84,6 @@ class ComputingConcurrentHashMap<K, V> extends MapMakerInternalMap<K, V> {
           if (e != null) {
             V value = getLiveValue(e);
             if (value != null) {
-              recordRead(e);
               return value;
             }
           }
@@ -114,18 +113,16 @@ class ComputingConcurrentHashMap<K, V> extends MapMakerInternalMap<K, V> {
                   } else {
                     V value = e.getValueReference().get();
                     if (value == null) {
-                      enqueueNotification(entryKey, hash, value, RemovalCause.COLLECTED);
+                      // TODO(kak): Remove this branch.
                     } else if (map.expires() && map.isExpired(e)) {
                       // This is a duplicate check, as preWriteCleanup already purged expired
                       // entries, but let's accomodate an incorrect expiration queue.
-                      enqueueNotification(entryKey, hash, value, RemovalCause.EXPIRED);
+                      // TODO(kak): Remove this branch.
                     } else {
-                      recordLockedRead(e);
                       return value;
                     }
 
                     // immediately reuse invalid entries
-                    evictionQueue.remove(e);
                     expirationQueue.remove(e);
                     this.count = newCount; // write-volatile
                   }
@@ -146,7 +143,6 @@ class ComputingConcurrentHashMap<K, V> extends MapMakerInternalMap<K, V> {
               }
             } finally {
               unlock();
-              postWriteCleanup();
             }
 
             if (createNewEntry) {
@@ -160,7 +156,6 @@ class ComputingConcurrentHashMap<K, V> extends MapMakerInternalMap<K, V> {
           // don't consider expiration as we're concurrent with computation
           V value = e.getValueReference().waitForValue();
           if (value != null) {
-            recordRead(e);
             return value;
           }
           // else computing thread will clearValue
@@ -175,31 +170,22 @@ class ComputingConcurrentHashMap<K, V> extends MapMakerInternalMap<K, V> {
         K key,
         int hash,
         ReferenceEntry<K, V> e,
-        ComputingValueReference<K, V> computingValueReference) throws ExecutionException {
+        ComputingValueReference<K, V> computingValueReference)
+        throws ExecutionException {
       V value = null;
-      long start = System.nanoTime();
-      long end = 0;
       try {
         // Synchronizes on the entry to allow failing fast when a recursive computation is
         // detected. This is not fool-proof since the entry may be copied when the segment
         // is written to.
         synchronized (e) {
           value = computingValueReference.compute(key, hash);
-          end = System.nanoTime();
         }
         if (value != null) {
           // putIfAbsent
-          V oldValue = put(key, hash, value, true);
-          if (oldValue != null) {
-            // the computed value was already clobbered
-            enqueueNotification(key, hash, value, RemovalCause.REPLACED);
-          }
+          V unused = put(key, hash, value, true);
         }
         return value;
       } finally {
-        if (end == 0) {
-          end = System.nanoTime();
-        }
         if (value == null) {
           clearValue(key, hash, computingValueReference);
         }
@@ -390,10 +376,7 @@ class ComputingConcurrentHashMap<K, V> extends MapMakerInternalMap<K, V> {
         keyEquivalence,
         valueEquivalence,
         expireAfterWriteNanos,
-        expireAfterAccessNanos,
-        maximumSize,
         concurrencyLevel,
-        removalListener,
         this,
         computingFunction);
   }
@@ -408,10 +391,7 @@ class ComputingConcurrentHashMap<K, V> extends MapMakerInternalMap<K, V> {
         Equivalence<Object> keyEquivalence,
         Equivalence<Object> valueEquivalence,
         long expireAfterWriteNanos,
-        long expireAfterAccessNanos,
-        int maximumSize,
         int concurrencyLevel,
-        RemovalListener<? super K, ? super V> removalListener,
         ConcurrentMap<K, V> delegate,
         Function<? super K, ? extends V> computingFunction) {
       super(
@@ -420,10 +400,7 @@ class ComputingConcurrentHashMap<K, V> extends MapMakerInternalMap<K, V> {
           keyEquivalence,
           valueEquivalence,
           expireAfterWriteNanos,
-          expireAfterAccessNanos,
-          maximumSize,
           concurrencyLevel,
-          removalListener,
           delegate);
       this.computingFunction = computingFunction;
     }

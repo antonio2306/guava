@@ -16,10 +16,7 @@
 
 package com.google.common.graph;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.graph.Graphs.MULTIGRAPH;
 import static com.google.common.graph.Graphs.addEdge;
-import static com.google.common.graph.Graphs.config;
 import static com.google.common.graph.Graphs.copyOf;
 import static com.google.common.graph.Graphs.mergeEdgesFrom;
 import static com.google.common.graph.Graphs.mergeNodesFrom;
@@ -61,7 +58,7 @@ public class GraphsTest {
   private static final String E44 = "4-4";
   private static final int NODE_COUNT = 20;
   private static final int EDGE_COUNT = 20;
-  // TODO(user): Consider adding both error messages from here and {@link AbstractGraphTest}
+  // TODO(user): Consider adding both error messages from here and {@link AbstractNetworkTest}
   // in one class (may be a utility class for error messages).
   private static final String ERROR_PARALLEL_EDGE = "connected by a different edge";
   private static final String ERROR_NEGATIVE_NODE_COUNT =
@@ -76,9 +73,10 @@ public class GraphsTest {
 
   @Test
   public void oppositeNode_basic() {
-    List<Graph<Integer, String>> testGraphs = ImmutableList.of(
-        Graphs.<Integer, String>createDirected(), Graphs.<Integer, String>createUndirected());
-    for (Graph<Integer, String> graph : testGraphs) {
+    List<MutableNetwork<Integer, String>> testNetworks = ImmutableList.of(
+        NetworkBuilder.directed().<Integer, String>build(),
+        NetworkBuilder.undirected().<Integer, String>build());
+    for (MutableNetwork<Integer, String> graph : testNetworks) {
       graph.addEdge(E12, N1, N2);
       assertThat(oppositeNode(graph, E12, N1)).isEqualTo(N2);
       assertThat(oppositeNode(graph, E12, N2)).isEqualTo(N1);
@@ -87,10 +85,10 @@ public class GraphsTest {
 
   @Test
   public void oppositeNode_parallelEdge() {
-    List<Graph<Integer, String>> testGraphs = ImmutableList.of(
-        Graphs.<Integer, String>createDirected(MULTIGRAPH),
-        Graphs.<Integer, String>createUndirected(MULTIGRAPH));
-    for (Graph<Integer, String> graph : testGraphs) {
+    List<MutableNetwork<Integer, String>> testNetworks = ImmutableList.of(
+        NetworkBuilder.directed().allowsParallelEdges(true).<Integer, String>build(),
+        NetworkBuilder.undirected().allowsParallelEdges(true).<Integer, String>build());
+    for (MutableNetwork<Integer, String> graph : testNetworks) {
       graph.addEdge(E12, N1, N2);
       graph.addEdge(E12_A, N1, N2);
       assertThat(oppositeNode(graph, E12, N1)).isEqualTo(N2);
@@ -102,9 +100,10 @@ public class GraphsTest {
 
   @Test
   public void oppositeNode_selfLoop() {
-    List<Graph<Integer, String>> testGraphs = ImmutableList.of(
-        Graphs.<Integer, String>createDirected(), Graphs.<Integer, String>createUndirected());
-    for (Graph<Integer, String> graph : testGraphs) {
+    List<MutableNetwork<Integer, String>> testNetworks = ImmutableList.of(
+        NetworkBuilder.directed().<Integer, String>build(),
+        NetworkBuilder.undirected().<Integer, String>build());
+    for (MutableNetwork<Integer, String> graph : testNetworks) {
       graph.addEdge(E11, N1, N1);
       assertThat(oppositeNode(graph, E11, N1)).isEqualTo(N1);
     }
@@ -112,9 +111,10 @@ public class GraphsTest {
 
   @Test
   public void oppositeNode_nodeNotIncident() {
-    List<Graph<Integer, String>> testGraphs = ImmutableList.of(
-        Graphs.<Integer, String>createDirected(), Graphs.<Integer, String>createUndirected());
-    for (Graph<Integer, String> graph : testGraphs) {
+    List<MutableNetwork<Integer, String>> testNetworks = ImmutableList.of(
+        NetworkBuilder.directed().<Integer, String>build(),
+        NetworkBuilder.undirected().<Integer, String>build());
+    for (MutableNetwork<Integer, String> graph : testNetworks) {
       graph.addEdge(E12, N1, N2);
       graph.addEdge(E13, N1, N3);
       try {
@@ -127,7 +127,8 @@ public class GraphsTest {
 
   @Test
   public void parallelEdges_directed() {
-    DirectedGraph<Integer, String> directedGraph = Graphs.createDirected(MULTIGRAPH);
+    MutableNetwork<Integer, String> directedGraph =
+        NetworkBuilder.directed().allowsParallelEdges(true).build();
     directedGraph.addEdge(E12, N1, N2);
     directedGraph.addEdge(E12_A, N1, N2);
     directedGraph.addEdge(E21, N2, N1);
@@ -138,7 +139,8 @@ public class GraphsTest {
 
   @Test
   public void parallelEdges_selfLoop_directed() {
-    DirectedGraph<Integer, String> directedGraph = Graphs.createDirected(MULTIGRAPH);
+    MutableNetwork<Integer, String> directedGraph =
+        NetworkBuilder.directed().allowsParallelEdges(true).build();
     directedGraph.addEdge(E11, N1, N1);
     directedGraph.addEdge(E11_A, N1, N1);
     assertThat(Graphs.parallelEdges(directedGraph, E11)).containsExactly(E11_A);
@@ -147,7 +149,8 @@ public class GraphsTest {
 
   @Test
   public void parallelEdges_undirected() {
-    UndirectedGraph<Integer, String> undirectedGraph = Graphs.createUndirected(MULTIGRAPH);
+    MutableNetwork<Integer, String> undirectedGraph =
+        NetworkBuilder.undirected().allowsParallelEdges(true).build();
     undirectedGraph.addEdge(E12, N1, N2);
     undirectedGraph.addEdge(E12_A, N1, N2);
     undirectedGraph.addEdge(E21, N2, N1);
@@ -158,7 +161,8 @@ public class GraphsTest {
 
   @Test
   public void parallelEdges_selfLoop_undirected() {
-    UndirectedGraph<Integer, String> undirectedGraph = Graphs.createUndirected(MULTIGRAPH);
+    MutableNetwork<Integer, String> undirectedGraph =
+        NetworkBuilder.undirected().allowsParallelEdges(true).build();
     undirectedGraph.addEdge(E11, N1, N1);
     undirectedGraph.addEdge(E11_A, N1, N1);
     assertThat(Graphs.parallelEdges(undirectedGraph, E11)).containsExactly(E11_A);
@@ -167,7 +171,8 @@ public class GraphsTest {
 
   @Test
   public void parallelEdges_unmodifiableView() {
-    UndirectedGraph<Integer, String> undirectedGraph = Graphs.createUndirected(MULTIGRAPH);
+    MutableNetwork<Integer, String> undirectedGraph =
+        NetworkBuilder.undirected().allowsParallelEdges(true).build();
     undirectedGraph.addEdge(E12, N1, N2);
     undirectedGraph.addEdge(E12_A, N1, N2);
     Set<String> parallelEdges = Graphs.parallelEdges(undirectedGraph, E12);
@@ -183,7 +188,7 @@ public class GraphsTest {
 
   @Test
   public void createDirected() {
-    DirectedGraph<Integer, String> directedGraph = Graphs.createDirected();
+    MutableNetwork<Integer, String> directedGraph = NetworkBuilder.directed().build();
     assertThat(directedGraph.nodes()).isEmpty();
     assertThat(directedGraph.edges()).isEmpty();
     assertThat(directedGraph.addEdge(E12, N1, N2)).isTrue();
@@ -202,7 +207,7 @@ public class GraphsTest {
 
   @Test
   public void createUndirected() {
-    UndirectedGraph<Integer, String> undirectedGraph = Graphs.createUndirected();
+    MutableNetwork<Integer, String> undirectedGraph = NetworkBuilder.undirected().build();
     assertThat(undirectedGraph.nodes()).isEmpty();
     assertThat(undirectedGraph.edges()).isEmpty();
     assertThat(undirectedGraph.addEdge(E12, N1, N2)).isTrue();
@@ -227,8 +232,8 @@ public class GraphsTest {
 
   @Test
   public void createDirected_multigraph() {
-    DirectedGraph<Integer, String> directedMultigraph =
-        Graphs.createDirected(config().multigraph());
+    MutableNetwork<Integer, String> directedMultigraph =
+        NetworkBuilder.directed().allowsParallelEdges(true).build();
     assertThat(directedMultigraph.addEdge(E12, N1, N2)).isTrue();
     assertThat(directedMultigraph.addEdge(E12_A, N1, N2)).isTrue();
     assertThat(directedMultigraph.edgesConnecting(N1, N2)).isEqualTo(ImmutableSet.of(E12, E12_A));
@@ -237,8 +242,8 @@ public class GraphsTest {
 
   @Test
   public void createUndirected_multigraph() {
-    UndirectedGraph<Integer, String> undirectedMultigraph =
-        Graphs.createUndirected(Graphs.MULTIGRAPH);
+    MutableNetwork<Integer, String> undirectedMultigraph =
+        NetworkBuilder.undirected().allowsParallelEdges(true).build();
     assertThat(undirectedMultigraph.addEdge(E12, N1, N2)).isTrue();
     assertThat(undirectedMultigraph.addEdge(E12_A, N1, N2)).isTrue();
     assertThat(undirectedMultigraph.addEdge(E21, N2, N1)).isTrue();
@@ -248,8 +253,9 @@ public class GraphsTest {
 
   @Test
   public void createDirected_expectedNodeCount() {
-    DirectedGraph<Integer, String> directedGraph =
-        Graphs.createDirected(config().expectedNodeCount(NODE_COUNT));
+    MutableNetwork<Integer, String> directedGraph = NetworkBuilder.directed()
+        .expectedNodeCount(NODE_COUNT)
+        .build();
     assertThat(directedGraph.addEdge(E12, N1, N2)).isTrue();
     assertThat(directedGraph.edgesConnecting(N1, N2)).isEqualTo(ImmutableSet.of(E12));
     assertThat(directedGraph.edgesConnecting(N2, N1)).isEmpty();
@@ -257,17 +263,18 @@ public class GraphsTest {
 
   @Test
   public void createUndirected_expectedNodeCount() {
-    UndirectedGraph<Integer, String> undirectedGraph =
-        Graphs.createUndirected(config().expectedNodeCount(NODE_COUNT));
+    MutableNetwork<Integer, String> undirectedGraph = NetworkBuilder.undirected()
+        .expectedNodeCount(NODE_COUNT)
+        .build();
     assertThat(undirectedGraph.addEdge(E12, N1, N2)).isTrue();
     assertThat(undirectedGraph.edgesConnecting(N1, N2)).isEqualTo(ImmutableSet.of(E12));
     assertThat(undirectedGraph.edgesConnecting(N2, N1)).isEqualTo(ImmutableSet.of(E12));
   }
 
   @Test
-  public void config_expectedNodeCount_negative() {
+  public void builder_expectedNodeCount_negative() {
     try {
-      config().expectedNodeCount(-1);
+      NetworkBuilder.directed().expectedNodeCount(-1);
       fail(ERROR_NEGATIVE_NODE_COUNT);
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).contains(ERROR_NEGATIVE_NODE_COUNT);
@@ -275,18 +282,10 @@ public class GraphsTest {
   }
 
   @Test
-  public void config_expectedNodeCount_overridden() {
-    GraphConfig oldConfig = config().expectedNodeCount(NODE_COUNT);
-    assertThat(oldConfig.getExpectedNodeCount().get()).isEqualTo(NODE_COUNT);
-    GraphConfig newConfig = oldConfig.expectedNodeCount(NODE_COUNT + 1);
-    assertThat(oldConfig.getExpectedNodeCount().get()).isEqualTo(NODE_COUNT);
-    assertThat(newConfig.getExpectedNodeCount().get()).isEqualTo(NODE_COUNT + 1);
-  }
-
-  @Test
   public void createDirected_expectedEdgeCount() {
-    DirectedGraph<Integer, String> directedGraph =
-        Graphs.createDirected(config().expectedEdgeCount(EDGE_COUNT));
+    MutableNetwork<Integer, String> directedGraph = NetworkBuilder.directed()
+        .expectedEdgeCount(EDGE_COUNT)
+        .build();
     assertThat(directedGraph.addEdge(E12, N1, N2)).isTrue();
     assertThat(directedGraph.edgesConnecting(N1, N2)).isEqualTo(ImmutableSet.of(E12));
     assertThat(directedGraph.edgesConnecting(N2, N1)).isEmpty();
@@ -294,17 +293,18 @@ public class GraphsTest {
 
   @Test
   public void createUndirected_expectedEdgeCount() {
-    UndirectedGraph<Integer, String> undirectedGraph =
-        Graphs.createUndirected(config().expectedEdgeCount(EDGE_COUNT));
+    MutableNetwork<Integer, String> undirectedGraph = NetworkBuilder.undirected()
+        .expectedEdgeCount(EDGE_COUNT)
+        .build();
     assertThat(undirectedGraph.addEdge(E12, N1, N2)).isTrue();
     assertThat(undirectedGraph.edgesConnecting(N1, N2)).isEqualTo(ImmutableSet.of(E12));
     assertThat(undirectedGraph.edgesConnecting(N2, N1)).isEqualTo(ImmutableSet.of(E12));
   }
 
   @Test
-  public void config_expectedEdgeCount_negative() {
+  public void builder_expectedEdgeCount_negative() {
     try {
-      config().expectedEdgeCount(-1);
+      NetworkBuilder.directed().expectedEdgeCount(-1);
       fail(ERROR_NEGATIVE_EDGE_COUNT);
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).contains(ERROR_NEGATIVE_EDGE_COUNT);
@@ -312,17 +312,9 @@ public class GraphsTest {
   }
 
   @Test
-  public void config_expectedEdgeCount_overridden() {
-    GraphConfig oldConfig = config().expectedEdgeCount(EDGE_COUNT);
-    assertThat(oldConfig.getExpectedEdgeCount().get()).isEqualTo(EDGE_COUNT);
-    GraphConfig newConfig = oldConfig.expectedEdgeCount(EDGE_COUNT + 1);
-    assertThat(oldConfig.getExpectedEdgeCount().get()).isEqualTo(EDGE_COUNT);
-    assertThat(newConfig.getExpectedEdgeCount().get()).isEqualTo(EDGE_COUNT + 1);
-  }
-
-  @Test
   public void createDirected_noSelfLoops() {
-    DirectedGraph<Integer, String> directedGraph = Graphs.createDirected(config().noSelfLoops());
+    MutableNetwork<Integer, String> directedGraph
+        = NetworkBuilder.directed().allowsSelfLoops(false).build();
     try {
       directedGraph.addEdge(E11, N1, N1);
       fail(ERROR_ADDED_SELF_LOOP);
@@ -333,27 +325,14 @@ public class GraphsTest {
 
   @Test
   public void createUndirected_noSelfLoops() {
-    UndirectedGraph<Integer, String> undirectedGraph =
-        Graphs.createUndirected(config().noSelfLoops());
+    MutableNetwork<Integer, String> undirectedGraph =
+        NetworkBuilder.undirected().allowsSelfLoops(false).build();
     try {
       undirectedGraph.addEdge(E11, N1, N1);
       fail(ERROR_ADDED_SELF_LOOP);
     } catch (IllegalArgumentException e) {
       assertThat(e.getMessage()).contains(ERROR_SELF_LOOP);
     }
-  }
-
-  // Note that this test works precisely because config() returns a new object every time.
-  @Test
-  public void config_immutability() {
-    GraphConfig unused = config().multigraph();
-    assertThat(config().isMultigraph()).isFalse();
-    unused = config().expectedNodeCount(NODE_COUNT);
-    assertThat(config().getExpectedNodeCount()).isAbsent();
-    unused = config().expectedEdgeCount(EDGE_COUNT);
-    assertThat(config().getExpectedEdgeCount()).isAbsent();
-    unused = config().noSelfLoops();
-    assertThat(config().isSelfLoopsAllowed()).isTrue();
   }
 
   @Test
@@ -368,7 +347,7 @@ public class GraphsTest {
   @Test
   public void addEdge_nullNodes() {
     try {
-      addEdge(Graphs.createDirected(), E11, null);
+      addEdge(NetworkBuilder.directed().build(), E11, null);
       fail("Should have rejected null nodes");
     } catch (NullPointerException expected) {
     }
@@ -377,7 +356,7 @@ public class GraphsTest {
   @Test
   public void addEdge_tooManyNodes() {
     try {
-      addEdge(Graphs.<Integer, String>createDirected(), E11, ImmutableSet.<Integer>of(N1, N2, N3));
+      addEdge(NetworkBuilder.directed().<Integer, String>build(), E11, ImmutableSet.of(N1, N2, N3));
       fail("Should have rejected adding an edge to a Graph with > 2 nodes");
     } catch (IllegalArgumentException expected) {
     }
@@ -386,7 +365,7 @@ public class GraphsTest {
   @Test
   public void addEdge_notEnoughNodes() {
     try {
-      addEdge(Graphs.createDirected(), E11, ImmutableSet.of());
+      addEdge(NetworkBuilder.directed().build(), E11, ImmutableSet.of());
       fail("Should have rejected adding an edge to a Graph with < 1 nodes");
     } catch (IllegalArgumentException expected) {
     }
@@ -394,7 +373,7 @@ public class GraphsTest {
 
   @Test
   public void addEdge_selfLoop() {
-    DirectedGraph<Integer, String> directedGraph = Graphs.createDirected();
+    MutableNetwork<Integer, String> directedGraph = NetworkBuilder.directed().build();
     assertThat(addEdge(directedGraph, E11, ImmutableSet.of(N1))).isTrue();
     assertThat(directedGraph.edges()).containsExactly(E11);
     assertThat(directedGraph.nodes()).containsExactly(N1);
@@ -403,7 +382,7 @@ public class GraphsTest {
 
   @Test
   public void addEdge_basic() {
-    DirectedGraph<Integer, String> directedGraph = Graphs.createDirected();
+    MutableNetwork<Integer, String> directedGraph = NetworkBuilder.directed().build();
     assertThat(addEdge(directedGraph, E12, ImmutableSet.of(N1, N2))).isTrue();
     assertThat(directedGraph.edges()).containsExactly(E12);
     assertThat(directedGraph.nodes()).containsExactly(N1, N2).inOrder();
@@ -413,12 +392,7 @@ public class GraphsTest {
   @Test
   public void copyOf_nullArgument() {
     try {
-      copyOf((DirectedGraph) null);
-      fail("Should have rejected a null graph");
-    } catch (NullPointerException expected) {
-    }
-    try {
-      copyOf((UndirectedGraph) null);
+      copyOf(null);
       fail("Should have rejected a null graph");
     } catch (NullPointerException expected) {
     }
@@ -426,71 +400,65 @@ public class GraphsTest {
 
   @Test
   public void copyOf_directedGraph() {
-    DirectedGraph<Integer, String> directedGraph = buildDirectedTestGraph();
+    Graph<Integer> directedGraph = buildDirectedTestGraph();
 
-    DirectedGraph<Integer, String> copy = copyOf(directedGraph);
+    Graph<Integer> copy = copyOf(directedGraph);
     assertThat(copy).isEqualTo(directedGraph);
   }
 
   @Test
   public void copyOf_undirectedGraph() {
-    UndirectedGraph<Integer, String> undirectedGraph = buildUndirectedTestGraph();
+    Graph<Integer> undirectedGraph = buildUndirectedTestGraph();
 
-    UndirectedGraph<Integer, String> copy = copyOf(undirectedGraph);
+    Graph<Integer> copy = copyOf(undirectedGraph);
     assertThat(copy).isEqualTo(undirectedGraph);
   }
 
-  // TODO: add a test for copyOf_hypergraph() once we have a Hypergraph implementation
-
   @Test
-  public void copyOf_filtered_undirected() {
-    UndirectedGraph<Integer, String> undirectedGraph = buildUndirectedTestGraph();
-    undirectedGraph.addNode(N3);
-    Predicate<Integer> nodePredicate = connectedNodePredicate(undirectedGraph);
-    Predicate<String> edgePredicate = Predicates.not(selfLoopPredicate(undirectedGraph));
+  public void copyOf_filtered_undirectedGraph() {
+    MutableGraph<Integer> undirectedGraph = buildUndirectedTestGraph();
+    undirectedGraph.addEdge(N3, N1);
+    Predicate<Integer> nodePredicate = Predicates.in(ImmutableSet.of(N1, N2));
 
-    UndirectedGraph<Integer, String> filteredCopy =
-        copyOf(undirectedGraph, nodePredicate, edgePredicate);
+    Graph<Integer> filteredCopy = copyOf(undirectedGraph, nodePredicate);
 
-    UndirectedGraph<Integer, String> expectedGraph = Graphs.createUndirected(MULTIGRAPH);
-    expectedGraph.addEdge(E12, N1, N2);
-    expectedGraph.addEdge(E12_A, N1, N2);
-    expectedGraph.addEdge(E21, N2, N1);
+    MutableGraph<Integer> expectedGraph = GraphBuilder.undirected().build();
+    expectedGraph.addEdge(N1, N1);
+    expectedGraph.addEdge(N1, N2);
+    expectedGraph.addEdge(N2, N1);
 
     assertThat(filteredCopy).isEqualTo(expectedGraph);
   }
 
   @Test
-  public void copyOf_filtered_directed() {
-    DirectedGraph<Integer, String> directedGraph = buildDirectedTestGraph();
-    directedGraph.addNode(N3);
-    Predicate<Integer> nodePredicate = connectedNodePredicate(directedGraph);
-    Predicate<String> edgePredicate = Predicates.not(selfLoopPredicate(directedGraph));
+  public void copyOf_filtered_directedGraph() {
+    MutableGraph<Integer> directedGraph = buildDirectedTestGraph();
+    directedGraph.addEdge(N3, N1);
+    Predicate<Integer> nodePredicate = Predicates.in(ImmutableSet.of(N1, N2));
 
-    DirectedGraph<Integer, String> filteredCopy =
-        copyOf(directedGraph, nodePredicate, edgePredicate);
+    Graph<Integer> filteredCopy = copyOf(directedGraph, nodePredicate);
 
-    DirectedGraph<Integer, String> expectedGraph = Graphs.createDirected(MULTIGRAPH);
-    expectedGraph.addEdge(E12, N1, N2);
-    expectedGraph.addEdge(E12_A, N1, N2);
-    expectedGraph.addEdge(E21, N2, N1);
+    MutableGraph<Integer> expectedGraph = GraphBuilder.directed().build();
+    expectedGraph.addEdge(N1, N1);
+    expectedGraph.addEdge(N1, N2);
+    expectedGraph.addEdge(N2, N1);
 
     assertThat(filteredCopy).isEqualTo(expectedGraph);
   }
 
   @Test
-  public void mergeNodesFrom_directed() {
-    DirectedGraph<Integer, String> directedGraph = buildDirectedTestGraph();
+  public void mergeNodesFrom_directedGraph() {
+    MutableGraph<Integer> directedGraph = buildDirectedTestGraph();
     directedGraph.addNode(N3);
 
-    DirectedGraph<Integer, String> actualGraph = Graphs.createDirected();
+    MutableGraph<Integer> actualGraph = GraphBuilder.directed().build();
     // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
     actualGraph.addNode(N4);
     actualGraph.addNode(N2);
 
     mergeNodesFrom(directedGraph, actualGraph);
 
-    DirectedGraph<Integer, String> expectedGraph = Graphs.createDirected();
+    MutableGraph<Integer> expectedGraph = GraphBuilder.directed().build();
     expectedGraph.addNode(N1);
     expectedGraph.addNode(N2);
     expectedGraph.addNode(N3);
@@ -500,51 +468,195 @@ public class GraphsTest {
   }
 
   @Test
-  public void mergeNodesFrom_filtered_directed() {
-    DirectedGraph<Integer, String> directedGraph = buildDirectedTestGraph();
-    directedGraph.addNode(N3);
-    Predicate<Integer> nodePredicate = connectedNodePredicate(directedGraph);
+  public void mergeNodesFrom_filtered_directedGraph() {
+    MutableGraph<Integer> directedGraph = buildDirectedTestGraph();
+    directedGraph.addEdge(N3, N1);
+    Predicate<Integer> nodePredicate = Predicates.in(ImmutableSet.of(N1, N2));
 
-    DirectedGraph<Integer, String> actualGraph = Graphs.createDirected();
+    MutableGraph<Integer> actualGraph = GraphBuilder.directed().build();
     // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
     actualGraph.addNode(N4); // ensure that we don't remove nodes that don't pass the predicate
     actualGraph.addNode(N2); // ensure that a pre-existing node is not affected by the merging
 
     mergeNodesFrom(directedGraph, actualGraph, nodePredicate);
 
-    DirectedGraph<Integer, String> expectedGraph = Graphs.createDirected();
+    MutableGraph<Integer> expectedGraph = GraphBuilder.directed().build();
     expectedGraph.addNode(N1);
     expectedGraph.addNode(N2);
-    // N3 is not expected because it's not connected
+    // N3 is not expected because it's not in {N1, N2}
     expectedGraph.addNode(N4);
 
     assertThat(actualGraph).isEqualTo(expectedGraph);
   }
 
   @Test
-  public void mergeEdgesFrom_directed() {
-    DirectedGraph<Integer, String> directedGraph = buildDirectedTestGraph();
+  public void mergeNodesFrom_undirectedGraph() {
+    MutableGraph<Integer> undirectedGraph = buildUndirectedTestGraph();
+    undirectedGraph.addNode(N3);
 
-    DirectedGraph<Integer, String> actualGraph = Graphs.createDirected(MULTIGRAPH);
+    MutableGraph<Integer> actualGraph = GraphBuilder.undirected().build();
+    // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
+    actualGraph.addNode(N4);
+    actualGraph.addNode(N2);
+
+    mergeNodesFrom(undirectedGraph, actualGraph);
+
+    MutableGraph<Integer> expectedGraph = GraphBuilder.undirected().build();
+    expectedGraph.addNode(N1);
+    expectedGraph.addNode(N2);
+    expectedGraph.addNode(N3);
+    expectedGraph.addNode(N4);
+
+    assertThat(actualGraph).isEqualTo(expectedGraph);
+  }
+
+  @Test
+  public void mergeNodesFrom_filtered_undirectedGraph() {
+    MutableGraph<Integer> undirectedGraph = buildUndirectedTestGraph();
+    undirectedGraph.addEdge(N3, N1);
+    Predicate<Integer> nodePredicate = Predicates.in(ImmutableSet.of(N1, N2));
+
+    MutableGraph<Integer> actualGraph = GraphBuilder.undirected().build();
+    // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
+    actualGraph.addNode(N4); // ensure that we don't remove nodes that don't pass the predicate
+    actualGraph.addNode(N2); // ensure that a pre-existing node is not affected by the merging
+
+    mergeNodesFrom(undirectedGraph, actualGraph, nodePredicate);
+
+    MutableGraph<Integer> expectedGraph = GraphBuilder.undirected().build();
+    expectedGraph.addNode(N1);
+    expectedGraph.addNode(N2);
+    // N3 is not expected because it's not in {N1, N2}
+    expectedGraph.addNode(N4);
+
+    assertThat(actualGraph).isEqualTo(expectedGraph);
+  }
+
+  @Test
+  public void copyOf_directedNetwork() {
+    Network<Integer, String> directedGraph = buildDirectedTestNetwork();
+
+    Network<Integer, String> copy = copyOf(directedGraph);
+    assertThat(copy).isEqualTo(directedGraph);
+  }
+
+  @Test
+  public void copyOf_undirectedNetwork() {
+    Network<Integer, String> undirectedGraph = buildUndirectedTestNetwork();
+
+    Network<Integer, String> copy = copyOf(undirectedGraph);
+    assertThat(copy).isEqualTo(undirectedGraph);
+  }
+
+  // TODO: add a test for copyOf_hypergraph() once we have a Hypergraph implementation
+
+  @Test
+  public void copyOf_filtered_undirectedNetwork() {
+    MutableNetwork<Integer, String> undirectedGraph = buildUndirectedTestNetwork();
+    undirectedGraph.addEdge(E13, N1, N3);
+    Predicate<Integer> nodePredicate = Predicates.in(ImmutableSet.of(N1, N2));
+    Predicate<String> edgePredicate = Predicates.not(selfLoopPredicate(undirectedGraph));
+
+    Network<Integer, String> filteredCopy =
+        copyOf(undirectedGraph, nodePredicate, edgePredicate);
+
+    MutableNetwork<Integer, String> expectedGraph =
+        NetworkBuilder.undirected().allowsParallelEdges(true).build();
+    expectedGraph.addEdge(E12, N1, N2);
+    expectedGraph.addEdge(E12_A, N1, N2);
+    expectedGraph.addEdge(E21, N2, N1);
+
+    assertThat(filteredCopy).isEqualTo(expectedGraph);
+  }
+
+  @Test
+  public void copyOf_filtered_directedNetwork() {
+    MutableNetwork<Integer, String> directedGraph = buildDirectedTestNetwork();
+    directedGraph.addEdge(E13, N1, N3);
+    Predicate<Integer> nodePredicate = Predicates.in(ImmutableSet.of(N1, N2));
+    Predicate<String> edgePredicate = Predicates.not(selfLoopPredicate(directedGraph));
+
+    Network<Integer, String> filteredCopy =
+        copyOf(directedGraph, nodePredicate, edgePredicate);
+
+    MutableNetwork<Integer, String> expectedGraph =
+        NetworkBuilder.directed().allowsParallelEdges(true).build();
+    expectedGraph.addEdge(E12, N1, N2);
+    expectedGraph.addEdge(E12_A, N1, N2);
+    expectedGraph.addEdge(E21, N2, N1);
+
+    assertThat(filteredCopy).isEqualTo(expectedGraph);
+  }
+
+  @Test
+  public void mergeNodesFrom_directedNetwork() {
+    MutableNetwork<Integer, String> directedGraph = buildDirectedTestNetwork();
+    directedGraph.addNode(N3);
+
+    MutableNetwork<Integer, String> actualGraph = NetworkBuilder.directed().build();
+    // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
+    actualGraph.addNode(N4);
+    actualGraph.addNode(N2);
+
+    mergeNodesFrom(directedGraph, actualGraph);
+
+    MutableNetwork<Integer, String> expectedGraph = NetworkBuilder.directed().build();
+    expectedGraph.addNode(N1);
+    expectedGraph.addNode(N2);
+    expectedGraph.addNode(N3);
+    expectedGraph.addNode(N4);
+
+    assertThat(actualGraph).isEqualTo(expectedGraph);
+  }
+
+  @Test
+  public void mergeNodesFrom_filtered_directedNetwork() {
+    MutableNetwork<Integer, String> directedGraph = buildDirectedTestNetwork();
+    directedGraph.addEdge(E13, N1, N3);
+    Predicate<Integer> nodePredicate = Predicates.in(ImmutableSet.of(N1, N2));
+
+    MutableNetwork<Integer, String> actualGraph = NetworkBuilder.directed().build();
+    // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
+    actualGraph.addNode(N4); // ensure that we don't remove nodes that don't pass the predicate
+    actualGraph.addNode(N2); // ensure that a pre-existing node is not affected by the merging
+
+    mergeNodesFrom(directedGraph, actualGraph, nodePredicate);
+
+    MutableNetwork<Integer, String> expectedGraph = NetworkBuilder.directed().build();
+    expectedGraph.addNode(N1);
+    expectedGraph.addNode(N2);
+    // N3 is not expected because it's not in {N1, N2}
+    expectedGraph.addNode(N4);
+
+    assertThat(actualGraph).isEqualTo(expectedGraph);
+  }
+
+  @Test
+  public void mergeEdgesFrom_directedNetwork() {
+    Network<Integer, String> directedGraph = buildDirectedTestNetwork();
+
+    MutableNetwork<Integer, String> actualGraph
+        = NetworkBuilder.directed().allowsParallelEdges(true).build();
     // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
     actualGraph.addEdge(E11, N1, N1);
     actualGraph.addEdge(E22, N2, N2);
 
     mergeEdgesFrom(directedGraph, actualGraph);
 
-    DirectedGraph<Integer, String> expectedGraph = buildDirectedTestGraph();
+    MutableNetwork<Integer, String> expectedGraph = buildDirectedTestNetwork();
     expectedGraph.addEdge(E22, N2, N2);
 
     assertThat(actualGraph).isEqualTo(expectedGraph);
   }
 
   @Test
-  public void mergeEdgesFrom_filtered_directed() {
-    DirectedGraph<Integer, String> directedGraph = buildDirectedTestGraph();
+  public void mergeEdgesFrom_filtered_directedNetwork() {
+    MutableNetwork<Integer, String> directedGraph = buildDirectedTestNetwork();
     directedGraph.addNode(N3);
     Predicate<String> edgePredicate = Predicates.not(selfLoopPredicate(directedGraph));
 
-    DirectedGraph<Integer, String> actualGraph = Graphs.createDirected(MULTIGRAPH);
+    MutableNetwork<Integer, String> actualGraph
+        = NetworkBuilder.directed().allowsParallelEdges(true).build();
     // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
     actualGraph.addEdge(E11, N1, N1); // existing (redundant) self-loops should be retained
     actualGraph.addEdge(E22, N2, N2); // existing (novel) self-loops should be retained
@@ -553,7 +665,8 @@ public class GraphsTest {
 
     mergeEdgesFrom(directedGraph, actualGraph, edgePredicate);
 
-    DirectedGraph<Integer, String> expectedGraph = Graphs.createDirected(MULTIGRAPH);
+    MutableNetwork<Integer, String> expectedGraph =
+        NetworkBuilder.directed().allowsParallelEdges(true).build();
     // all pre-existing edges should still be there...
     expectedGraph.addEdge(E11, N1, N1);
     expectedGraph.addEdge(E22, N2, N2);
@@ -567,18 +680,18 @@ public class GraphsTest {
   }
 
   @Test
-  public void mergeNodesFrom_undirected() {
-    UndirectedGraph<Integer, String> undirectedGraph = buildUndirectedTestGraph();
+  public void mergeNodesFrom_undirectedNetwork() {
+    MutableNetwork<Integer, String> undirectedGraph = buildUndirectedTestNetwork();
     undirectedGraph.addNode(N3);
 
-    UndirectedGraph<Integer, String> actualGraph = Graphs.createUndirected();
+    MutableNetwork<Integer, String> actualGraph = NetworkBuilder.undirected().build();
     // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
     actualGraph.addNode(N4);
     actualGraph.addNode(N2);
 
     mergeNodesFrom(undirectedGraph, actualGraph);
 
-    UndirectedGraph<Integer, String> expectedGraph = Graphs.createUndirected();
+    MutableNetwork<Integer, String> expectedGraph = NetworkBuilder.undirected().build();
     expectedGraph.addNode(N1);
     expectedGraph.addNode(N2);
     expectedGraph.addNode(N3);
@@ -588,51 +701,53 @@ public class GraphsTest {
   }
 
   @Test
-  public void mergeNodesFrom_filtered_undirected() {
-    UndirectedGraph<Integer, String> undirectedGraph = buildUndirectedTestGraph();
-    undirectedGraph.addNode(N3);
-    Predicate<Integer> nodePredicate = connectedNodePredicate(undirectedGraph);
+  public void mergeNodesFrom_filtered_undirectedNetwork() {
+    MutableNetwork<Integer, String> undirectedGraph = buildUndirectedTestNetwork();
+    undirectedGraph.addEdge(E13, N1, N3);
+    Predicate<Integer> nodePredicate = Predicates.in(ImmutableSet.of(N1, N2));
 
-    UndirectedGraph<Integer, String> actualGraph = Graphs.createUndirected();
+    MutableNetwork<Integer, String> actualGraph = NetworkBuilder.undirected().build();
     // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
     actualGraph.addNode(N4); // ensure that we don't remove nodes that don't pass the predicate
     actualGraph.addNode(N2); // ensure that a pre-existing node is not affected by the merging
 
     mergeNodesFrom(undirectedGraph, actualGraph, nodePredicate);
 
-    UndirectedGraph<Integer, String> expectedGraph = Graphs.createUndirected();
+    MutableNetwork<Integer, String> expectedGraph = NetworkBuilder.undirected().build();
     expectedGraph.addNode(N1);
     expectedGraph.addNode(N2);
-    // N3 is not expected because it's not connected
+    // N3 is not expected because it's not in {N1, N2}
     expectedGraph.addNode(N4);
 
     assertThat(actualGraph).isEqualTo(expectedGraph);
   }
 
   @Test
-  public void mergeEdgesFrom_undirected() {
-    UndirectedGraph<Integer, String> undirectedGraph = buildUndirectedTestGraph();
+  public void mergeEdgesFrom_undirectedNetwork() {
+    Network<Integer, String> undirectedGraph = buildUndirectedTestNetwork();
 
-    UndirectedGraph<Integer, String> actualGraph = Graphs.createUndirected(MULTIGRAPH);
+    MutableNetwork<Integer, String> actualGraph =
+        NetworkBuilder.undirected().allowsParallelEdges(true).build();
     // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
     actualGraph.addEdge(E11, N1, N1);
     actualGraph.addEdge(E22, N2, N2);
 
     mergeEdgesFrom(undirectedGraph, actualGraph);
 
-    UndirectedGraph<Integer, String> expectedGraph = buildUndirectedTestGraph();
+    MutableNetwork<Integer, String> expectedGraph = buildUndirectedTestNetwork();
     expectedGraph.addEdge(E22, N2, N2);
 
     assertThat(actualGraph).isEqualTo(expectedGraph);
   }
 
   @Test
-  public void mergeEdgesFrom_filtered_undirected() {
-    UndirectedGraph<Integer, String> undirectedGraph = buildUndirectedTestGraph();
+  public void mergeEdgesFrom_filtered_undirectedNetwork() {
+    MutableNetwork<Integer, String> undirectedGraph = buildUndirectedTestNetwork();
     undirectedGraph.addNode(N3);
     Predicate<String> edgePredicate = Predicates.not(selfLoopPredicate(undirectedGraph));
 
-    UndirectedGraph<Integer, String> actualGraph = Graphs.createUndirected(MULTIGRAPH);
+    MutableNetwork<Integer, String> actualGraph =
+        NetworkBuilder.undirected().allowsParallelEdges(true).build();
     // prepopulate actualGraph to make sure that existing elements don't interfere with the merging
     actualGraph.addEdge(E11, N1, N1); // existing (redundant) self-loops should be retained
     actualGraph.addEdge(E22, N2, N2); // existing (novel) self-loops should be retained
@@ -641,7 +756,8 @@ public class GraphsTest {
 
     mergeEdgesFrom(undirectedGraph, actualGraph, edgePredicate);
 
-    UndirectedGraph<Integer, String> expectedGraph = Graphs.createUndirected(MULTIGRAPH);
+    MutableNetwork<Integer, String> expectedGraph =
+        NetworkBuilder.undirected().allowsParallelEdges(true).build();
     // all pre-existing edges should still be there...
     expectedGraph.addEdge(E11, N1, N1);
     expectedGraph.addEdge(E22, N2, N2);
@@ -654,8 +770,29 @@ public class GraphsTest {
     assertThat(actualGraph).isEqualTo(expectedGraph);
   }
 
-  private static DirectedGraph<Integer, String> buildDirectedTestGraph() {
-    DirectedGraph<Integer, String> directedGraph = Graphs.createDirected(MULTIGRAPH);
+  private static MutableGraph<Integer> buildDirectedTestGraph() {
+    MutableGraph<Integer> directedGraph = GraphBuilder.directed().build();
+    directedGraph.addEdge(N1, N1);
+    directedGraph.addEdge(N1, N2);
+    // TODO(b/28087289): add parallel edges to test
+    directedGraph.addEdge(N2, N1);
+
+    return directedGraph;
+  }
+
+  private static MutableGraph<Integer> buildUndirectedTestGraph() {
+    MutableGraph<Integer> undirectedGraph = GraphBuilder.undirected().build();
+    undirectedGraph.addEdge(N1, N1);
+    undirectedGraph.addEdge(N1, N2);
+    // TODO(b/28087289): add parallel edges to test
+    undirectedGraph.addEdge(N2, N1);
+
+    return undirectedGraph;
+  }
+
+  private static MutableNetwork<Integer, String> buildDirectedTestNetwork() {
+    MutableNetwork<Integer, String> directedGraph =
+        NetworkBuilder.directed().allowsParallelEdges(true).build();
     directedGraph.addEdge(E11, N1, N1);
     directedGraph.addEdge(E12, N1, N2);
     directedGraph.addEdge(E11_A, N1, N1);
@@ -665,8 +802,9 @@ public class GraphsTest {
     return directedGraph;
   }
 
-  private static UndirectedGraph<Integer, String> buildUndirectedTestGraph() {
-    UndirectedGraph<Integer, String> undirectedGraph = Graphs.createUndirected(MULTIGRAPH);
+  private static MutableNetwork<Integer, String> buildUndirectedTestNetwork() {
+    MutableNetwork<Integer, String> undirectedGraph =
+        NetworkBuilder.undirected().allowsParallelEdges(true).build();
     undirectedGraph.addEdge(E11, N1, N1);
     undirectedGraph.addEdge(E12, N1, N2);
     undirectedGraph.addEdge(E11_A, N1, N1);
@@ -674,15 +812,5 @@ public class GraphsTest {
     undirectedGraph.addEdge(E21, N2, N1);
 
     return undirectedGraph;
-  }
-
-  private static <N> Predicate<N> connectedNodePredicate(final Graph<N, ?> graph) {
-    checkNotNull(graph, "graph");
-    return new Predicate<N>() {
-      @Override
-      public boolean apply(N node) {
-        return graph.degree(node) > 0;
-      }
-    };
   }
 }

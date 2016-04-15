@@ -15,6 +15,7 @@
 package com.google.common.util.concurrent;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static com.google.common.util.concurrent.Uninterruptibles.getUninterruptibly;
 
@@ -178,7 +179,6 @@ public final class Futures extends GwtFuturesCatchingSpecialization {
    *
    * @since 14.0
    */
-  @GwtIncompatible // TODO
   public static <V> ListenableFuture<V> immediateCancelledFuture() {
     return new ImmediateCancelledFuture<V>();
   }
@@ -239,7 +239,7 @@ public final class Futures extends GwtFuturesCatchingSpecialization {
    *     {@code get()} throws a different kind of exception, that exception itself.
    * @since 19.0
    */
-  @GwtIncompatible // AVAILABLE but requires exceptionType to be Throwable.class
+  @Partially.GwtIncompatible("AVAILABLE but requires exceptionType to be Throwable.class")
   public static <V, X extends Throwable> ListenableFuture<V> catching(
       ListenableFuture<? extends V> input,
       Class<X> exceptionType,
@@ -289,7 +289,7 @@ public final class Futures extends GwtFuturesCatchingSpecialization {
    * @param executor the executor that runs {@code fallback} if {@code input} fails
    * @since 19.0
    */
-  @GwtIncompatible // AVAILABLE but requires exceptionType to be Throwable.class
+  @Partially.GwtIncompatible("AVAILABLE but requires exceptionType to be Throwable.class")
   public static <V, X extends Throwable> ListenableFuture<V> catching(
       ListenableFuture<? extends V> input,
       Class<X> exceptionType,
@@ -360,7 +360,7 @@ public final class Futures extends GwtFuturesCatchingSpecialization {
    * @since 19.0 (similar functionality in 14.0 as {@code withFallback})
    */
   @CanIgnoreReturnValue // TODO(kak): @CheckReturnValue
-  @GwtIncompatible // AVAILABLE but requires exceptionType to be Throwable.class
+  @Partially.GwtIncompatible("AVAILABLE but requires exceptionType to be Throwable.class")
   public static <V, X extends Throwable> ListenableFuture<V> catchingAsync(
       ListenableFuture<? extends V> input,
       Class<X> exceptionType,
@@ -431,7 +431,7 @@ public final class Futures extends GwtFuturesCatchingSpecialization {
    * @since 19.0 (similar functionality in 14.0 as {@code withFallback})
    */
   @CanIgnoreReturnValue // TODO(kak): @CheckReturnValue
-  @GwtIncompatible // AVAILABLE but requires exceptionType to be Throwable.class
+  @Partially.GwtIncompatible("AVAILABLE but requires exceptionType to be Throwable.class")
   public static <V, X extends Throwable> ListenableFuture<V> catchingAsync(
       ListenableFuture<? extends V> input,
       Class<X> exceptionType,
@@ -706,7 +706,11 @@ public final class Futures extends GwtFuturesCatchingSpecialization {
    *   SettableFuture<ListenableFuture<String>> nested = SettableFuture.create();
    *   ListenableFuture<String> dereferenced = dereference(nested);}</pre>
    *
-   * <p>This call has the same cancellation and execution semantics as {@link
+   * <p>Most users will not need this method. To create a {@code Future} that completes with the
+   * result of another {@code Future}, create a {@link SettableFuture}, and call {@link
+   * SettableFuture#setFuture setFuture(otherFuture)} on it.
+   *
+   * <p>{@code dereference} has the same cancellation and execution semantics as {@link
    * #transform(ListenableFuture, AsyncFunction)}, in that the returned {@code Future} attempts to
    * keep its cancellation state in sync with both the input {@code Future} and the nested {@code
    * Future}.  The transformation is very lightweight and therefore takes place in the same thread
@@ -1118,7 +1122,7 @@ public final class Futures extends GwtFuturesCatchingSpecialization {
           public void run() {
             final V value;
             try {
-              value = getUninterruptibly(future);
+              value = getDone(future);
             } catch (ExecutionException e) {
               callback.onFailure(e.getCause());
               return;
@@ -1133,6 +1137,42 @@ public final class Futures extends GwtFuturesCatchingSpecialization {
           }
         };
     future.addListener(callbackListener, executor);
+  }
+
+  /**
+   * Returns the result of the input {@code Future}, which must have already completed.
+   *
+   * <p>The benefits of this method are twofold. First, the name "getDone" suggests to readers that
+   * the {@code Future} is already done. Second, if buggy code calls {@code getDone} on a {@code
+   * Future} that is still pending, the program will throw instead of block. This can be important
+   * for APIs like {@link whenAllComplete whenAllComplete(...)}{@code .}{@link
+   * FutureCombiner#call(Callable) call(...)}, where it is easy to use a new input from the {@code
+   * call} implementation but forget to add it to the arguments of {@code whenAllComplete}.
+   *
+   * <p>If you are looking for a method to determine whether a given {@code Future} is done, use the
+   * instance method {@link Future#isDone()}.
+   *
+   * @throws ExecutionException if the {@code Future} failed with an exception
+   * @throws CancellationException if the {@code Future} was cancelled
+   * @throws IllegalStateException if the {@code Future} is not done
+   * @since 20.0
+   */
+  @CanIgnoreReturnValue
+  // TODO(cpovirk): Consider calling getDone() in our own code.
+  public static <V> V getDone(Future<V> future) throws ExecutionException {
+    /*
+     * We throw IllegalStateException, since the call could succeed later. Perhaps we "should" throw
+     * IllegalArgumentException, since the call could succeed with a different argument. Those
+     * exceptions' docs suggest that either is acceptable. Google's Java Practices page recommends
+     * IllegalArgumentException here, in part to keep its recommendation simple: Static methods
+     * should throw IllegalStateException only when they use static state.
+     *
+     *
+     * Why do we deviate here? The answer: We want for fluentFuture.getDone() to throw the same
+     * exception as Futures.getDone(fluentFuture).
+     */
+    checkState(future.isDone(), "Future was expected to be done: %s", future);
+    return getUninterruptibly(future);
   }
 
   /**

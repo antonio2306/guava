@@ -16,15 +16,23 @@
 
 package com.google.common.graph;
 
-import com.google.common.annotations.Beta;
+import static com.google.common.truth.Truth.assertThat;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
- * A tagging/marker subinterface of {@code Graph} for graphs whose edges are all undirected.
- *
- * @author Joshua O'Madadhain
- * @param <N> Node parameter type
- * @param <E> Edge parameter type
- * @since 20.0
+ * Tests for {@link ImmutableGraph}.
  */
-@Beta
-public interface UndirectedGraph<N, E> extends Graph<N, E> {}
+@RunWith(JUnit4.class)
+public class ImmutableGraphTest {
+
+  @Test
+  public void copyOfImmutableGraph_optimized() {
+    Graph<String> graph1 = ImmutableGraph.copyOf(GraphBuilder.directed().<String>build());
+    Graph<String> graph2 = ImmutableGraph.copyOf(graph1);
+
+    assertThat(graph2).isSameAs(graph1);
+  }
+}

@@ -19,7 +19,7 @@ package com.google.common.graph;
 import java.util.Set;
 
 /**
- * An interface for representing an origin node's adjacent nodes and incident edges in a graph.
+ * An interface for representing an origin node's adjacent nodes and incident edges in a network.
  *
  * @author James Sexton
  * @param <N> Node parameter type
@@ -41,13 +41,13 @@ interface NodeConnections<N, E> {
 
   /**
    * Remove {@code edge} from the sets of in edges. If this is known to be the last remaining edge
-   * between two (formally) connected nodes, {@link #removePredecessor} must also be called.
+   * between two (formerly) connected nodes, {@link #removePredecessor} must also be called.
    */
   void removeInEdge(Object edge);
 
   /**
    * Remove {@code edge} from the sets of out edges. If this is known to be the last remaining edge
-   * between two (formally) connected nodes, {@link #removeSuccessor} must also be called.
+   * between two (formerly) connected nodes, {@link #removeSuccessor} must also be called.
    */
   void removeOutEdge(Object edge);
 

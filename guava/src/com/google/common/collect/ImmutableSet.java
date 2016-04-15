@@ -32,7 +32,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -41,7 +40,6 @@ import javax.annotation.Nullable;
  *
  * @since 2.0
  */
-@CheckReturnValue
 @GwtCompatible(serializable = true, emulated = true)
 @SuppressWarnings("serial") // we're overriding default serialization
 public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements Set<E> {
@@ -180,9 +178,7 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements 
       return construct(uniques, elements);
     } else {
       Object[] uniqueElements =
-          (uniques < elements.length)
-              ? ObjectArrays.arraysCopyOf(elements, uniques)
-              : elements;
+          (uniques < elements.length) ? ObjectArrays.arraysCopyOf(elements, uniques) : elements;
       return new RegularImmutableSet<E>(uniqueElements, hashCode, table, mask);
     }
   }
@@ -228,7 +224,7 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements 
    * <p><b>Performance note:</b> This method will sometimes recognize that the actual copy operation
    * is unnecessary; for example, {@code copyOf(copyOf(anArrayList))} will copy the data only once.
    * This reduces the expense of habitually making defensive copies at API boundaries. However, the
-   * the precise conditions for skipping the copy operation are undefined.
+   * precise conditions for skipping the copy operation are undefined.
    *
    * @throws NullPointerException if any of {@code elements} is null
    * @since 7.0 (source-compatible since 2.0)
@@ -284,10 +280,7 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements 
     if (!elements.hasNext()) {
       return of(first);
     } else {
-      return new ImmutableSet.Builder<E>()
-          .add(first)
-          .addAll(elements)
-          .build();
+      return new ImmutableSet.Builder<E>().add(first).addAll(elements).build();
     }
   }
 

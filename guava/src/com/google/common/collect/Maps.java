@@ -64,7 +64,6 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -82,7 +81,6 @@ import javax.annotation.Nullable;
  * @author Louis Wasserman
  * @since 2.0
  */
-@CheckReturnValue
 @GwtCompatible(emulated = true)
 public final class Maps {
   private Maps() {}
@@ -736,11 +734,7 @@ public final class Maps {
    * @since 14.0
    */
   public static <K, V> Map<K, V> asMap(Set<K> set, Function<? super K, V> function) {
-    if (set instanceof SortedSet) {
-      return asMap((SortedSet<K>) set, function);
-    } else {
-      return new AsMapView<K, V>(set, function);
-    }
+    return new AsMapView<K, V>(set, function);
   }
 
   /**
@@ -770,11 +764,6 @@ public final class Maps {
    * @since 14.0
    */
   public static <K, V> SortedMap<K, V> asMap(SortedSet<K> set, Function<? super K, V> function) {
-    return Platform.mapsAsMapSortedSet(set, function);
-  }
-
-  static <K, V> SortedMap<K, V> asMapSortedIgnoreNavigable(
-      SortedSet<K> set, Function<? super K, V> function) {
     return new SortedAsMapView<K, V>(set, function);
   }
 
@@ -1554,9 +1543,7 @@ public final class Maps {
     @Override
     public Set<V> values() {
       Set<V> result = values;
-      return (result == null)
-          ? values = Collections.unmodifiableSet(delegate.values())
-          : result;
+      return (result == null) ? values = Collections.unmodifiableSet(delegate.values()) : result;
     }
 
     private static final long serialVersionUID = 0;
@@ -1747,9 +1734,6 @@ public final class Maps {
    */
   public static <K, V1, V2> Map<K, V2> transformEntries(
       Map<K, V1> fromMap, EntryTransformer<? super K, ? super V1, V2> transformer) {
-    if (fromMap instanceof SortedMap) {
-      return transformEntries((SortedMap<K, V1>) fromMap, transformer);
-    }
     return new TransformedEntriesMap<K, V1, V2>(fromMap, transformer);
   }
 
@@ -1807,7 +1791,7 @@ public final class Maps {
    */
   public static <K, V1, V2> SortedMap<K, V2> transformEntries(
       SortedMap<K, V1> fromMap, EntryTransformer<? super K, ? super V1, V2> transformer) {
-    return Platform.mapsTransformEntriesSortedMap(fromMap, transformer);
+    return new TransformedEntriesSortedMap<K, V1, V2>(fromMap, transformer);
   }
 
   /**
@@ -1867,11 +1851,6 @@ public final class Maps {
   public static <K, V1, V2> NavigableMap<K, V2> transformEntries(
       NavigableMap<K, V1> fromMap, EntryTransformer<? super K, ? super V1, V2> transformer) {
     return new TransformedEntriesNavigableMap<K, V1, V2>(fromMap, transformer);
-  }
-
-  static <K, V1, V2> SortedMap<K, V2> transformEntriesIgnoreNavigable(
-      SortedMap<K, V1> fromMap, EntryTransformer<? super K, ? super V1, V2> transformer) {
-    return new TransformedEntriesSortedMap<K, V1, V2>(fromMap, transformer);
   }
 
   /**
@@ -2247,11 +2226,6 @@ public final class Maps {
    */
   public static <K, V> Map<K, V> filterKeys(
       Map<K, V> unfiltered, final Predicate<? super K> keyPredicate) {
-    if (unfiltered instanceof SortedMap) {
-      return filterKeys((SortedMap<K, V>) unfiltered, keyPredicate);
-    } else if (unfiltered instanceof BiMap) {
-      return filterKeys((BiMap<K, V>) unfiltered, keyPredicate);
-    }
     checkNotNull(keyPredicate);
     Predicate<Entry<K, ?>> entryPredicate = keyPredicateOnEntries(keyPredicate);
     return (unfiltered instanceof AbstractFilteredMap)
@@ -2396,11 +2370,6 @@ public final class Maps {
    */
   public static <K, V> Map<K, V> filterValues(
       Map<K, V> unfiltered, final Predicate<? super V> valuePredicate) {
-    if (unfiltered instanceof SortedMap) {
-      return filterValues((SortedMap<K, V>) unfiltered, valuePredicate);
-    } else if (unfiltered instanceof BiMap) {
-      return filterValues((BiMap<K, V>) unfiltered, valuePredicate);
-    }
     return filterEntries(unfiltered, Maps.<V>valuePredicateOnEntries(valuePredicate));
   }
 
@@ -2541,11 +2510,6 @@ public final class Maps {
    */
   public static <K, V> Map<K, V> filterEntries(
       Map<K, V> unfiltered, Predicate<? super Entry<K, V>> entryPredicate) {
-    if (unfiltered instanceof SortedMap) {
-      return filterEntries((SortedMap<K, V>) unfiltered, entryPredicate);
-    } else if (unfiltered instanceof BiMap) {
-      return filterEntries((BiMap<K, V>) unfiltered, entryPredicate);
-    }
     checkNotNull(entryPredicate);
     return (unfiltered instanceof AbstractFilteredMap)
         ? filterFiltered((AbstractFilteredMap<K, V>) unfiltered, entryPredicate)
@@ -2584,11 +2548,6 @@ public final class Maps {
    * @since 11.0
    */
   public static <K, V> SortedMap<K, V> filterEntries(
-      SortedMap<K, V> unfiltered, Predicate<? super Entry<K, V>> entryPredicate) {
-    return Platform.mapsFilterSortedMap(unfiltered, entryPredicate);
-  }
-
-  static <K, V> SortedMap<K, V> filterSortedIgnoreNavigable(
       SortedMap<K, V> unfiltered, Predicate<? super Entry<K, V>> entryPredicate) {
     checkNotNull(entryPredicate);
     return (unfiltered instanceof FilteredEntrySortedMap)
@@ -4201,22 +4160,24 @@ public final class Maps {
   @GwtIncompatible // NavigableMap
   public static <K extends Comparable<? super K>, V> NavigableMap<K, V> subMap(
       NavigableMap<K, V> map, Range<K> range) {
-    if (map.comparator() != null && map.comparator() != Ordering.natural()
-        && range.hasLowerBound() && range.hasUpperBound()) {
-      checkArgument(map.comparator().compare(range.lowerEndpoint(), range.upperEndpoint()) <= 0,
+    if (map.comparator() != null
+        && map.comparator() != Ordering.natural()
+        && range.hasLowerBound()
+        && range.hasUpperBound()) {
+      checkArgument(
+          map.comparator().compare(range.lowerEndpoint(), range.upperEndpoint()) <= 0,
           "map is using a custom comparator which is inconsistent with the natural ordering.");
     }
     if (range.hasLowerBound() && range.hasUpperBound()) {
-      return map.subMap(range.lowerEndpoint(),
-                        range.lowerBoundType() == BoundType.CLOSED,
-                        range.upperEndpoint(),
-                        range.upperBoundType() == BoundType.CLOSED);
+      return map.subMap(
+          range.lowerEndpoint(),
+          range.lowerBoundType() == BoundType.CLOSED,
+          range.upperEndpoint(),
+          range.upperBoundType() == BoundType.CLOSED);
     } else if (range.hasLowerBound()) {
-      return map.tailMap(range.lowerEndpoint(),
-                         range.lowerBoundType() == BoundType.CLOSED);
+      return map.tailMap(range.lowerEndpoint(), range.lowerBoundType() == BoundType.CLOSED);
     } else if (range.hasUpperBound()) {
-      return map.headMap(range.upperEndpoint(),
-                         range.upperBoundType() == BoundType.CLOSED);
+      return map.headMap(range.upperEndpoint(), range.upperBoundType() == BoundType.CLOSED);
     }
     return checkNotNull(map);
   }

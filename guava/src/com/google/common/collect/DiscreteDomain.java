@@ -24,8 +24,6 @@ import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.NoSuchElementException;
 
-import javax.annotation.CheckReturnValue;
-
 /**
  * A descriptor for a <i>discrete</i> {@code Comparable} domain such as all
  * {@link Integer} instances. A discrete domain is one that supports the three basic
@@ -44,7 +42,6 @@ import javax.annotation.CheckReturnValue;
  * @author Kevin Bourrillion
  * @since 10.0
  */
-@CheckReturnValue
 @GwtCompatible
 @Beta
 public abstract class DiscreteDomain<C extends Comparable> {
@@ -186,11 +183,7 @@ public abstract class DiscreteDomain<C extends Comparable> {
 
     @Override
     public long distance(BigInteger start, BigInteger end) {
-      return end
-          .subtract(start)
-          .max(MIN_LONG)
-          .min(MAX_LONG)
-          .longValue();
+      return end.subtract(start).max(MIN_LONG).min(MAX_LONG).longValue();
     }
 
     private Object readResolve() {

@@ -32,7 +32,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
 
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -106,7 +105,6 @@ import javax.annotation.Nullable;
  * @author Marcin Mikosik
  * @since 12.0
  */
-@CheckReturnValue
 @GwtCompatible(emulated = true)
 public abstract class FluentIterable<E> implements Iterable<E> {
   // We store 'iterable' and use it instead of 'this' to allow Iterables to perform instanceof
@@ -495,7 +493,9 @@ public abstract class FluentIterable<E> implements Iterable<E> {
 
   /**
    * Returns an {@link Optional} containing the last element in this fluent iterable. If the
-   * iterable is empty, {@code Optional.absent()} is returned.
+   * iterable is empty, {@code Optional.absent()} is returned. If the underlying {@code iterable}
+   * is a {@link List} with {@link java.util.RandomAccess} support, then this operation is
+   * guaranteed to be {@code O(1)}.
    *
    * <p><b>{@code Stream} equivalent:</b> {@code stream.reduce((a, b) -> b)}.
    *

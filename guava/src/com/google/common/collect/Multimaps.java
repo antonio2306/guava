@@ -49,7 +49,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedSet;
 
-import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
 /**
@@ -65,7 +64,6 @@ import javax.annotation.Nullable;
  * @author Louis Wasserman
  * @since 2.0
  */
-@CheckReturnValue
 @GwtCompatible(emulated = true)
 public final class Multimaps {
   private Multimaps() {}
@@ -511,16 +509,17 @@ public final class Multimaps {
     public Map<K, Collection<V>> asMap() {
       Map<K, Collection<V>> result = map;
       if (result == null) {
-        result = map =
-            Collections.unmodifiableMap(
-                Maps.transformValues(
-                    delegate.asMap(),
-                    new Function<Collection<V>, Collection<V>>() {
-                      @Override
-                      public Collection<V> apply(Collection<V> collection) {
-                        return unmodifiableValueCollection(collection);
-                      }
-                    }));
+        result =
+            map =
+                Collections.unmodifiableMap(
+                    Maps.transformValues(
+                        delegate.asMap(),
+                        new Function<Collection<V>, Collection<V>>() {
+                          @Override
+                          public Collection<V> apply(Collection<V> collection) {
+                            return unmodifiableValueCollection(collection);
+                          }
+                        }));
       }
       return result;
     }

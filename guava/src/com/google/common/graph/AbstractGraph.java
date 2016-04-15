@@ -25,38 +25,25 @@ import javax.annotation.Nullable;
  *
  * @author James Sexton
  * @param <N> Node parameter type
- * @param <E> Edge parameter type
  */
-public abstract class AbstractGraph<N, E> implements Graph<N, E> {
-
-  protected final GraphConfig config;
-
-  /**
-   * Not all subclasses necessarily need to expose a constructor that takes a {@link GraphConfig},
-   * but they do need to provide the {@code config} here that will be returned by {@link #config()}.
-   */
-  protected AbstractGraph(GraphConfig config) {
-    this.config = config;
-  }
-
-  @Override
-  public GraphConfig config() {
-    return config;
-  }
+public abstract class AbstractGraph<N> implements Graph<N> {
 
   @Override
   public int degree(Object node) {
-    return incidentEdges(node).size();
+    // only works for non-multigraphs; multigraphs not yet supported
+    return adjacentNodes(node).size();
   }
 
   @Override
   public int inDegree(Object node) {
-    return inEdges(node).size();
+    // only works for non-multigraphs; multigraphs not yet supported
+    return predecessors(node).size();
   }
 
   @Override
   public int outDegree(Object node) {
-    return outEdges(node).size();
+    // only works for non-multigraphs; multigraphs not yet supported
+    return successors(node).size();
   }
 
   @Override
@@ -64,7 +51,7 @@ public abstract class AbstractGraph<N, E> implements Graph<N, E> {
     if (!(object instanceof Graph)) {
       return false;
     }
-    return Graphs.equal(this, (Graph<?, ?>) object);
+    return Graphs.equal(this, (Graph<?>) object);
   }
 
   @Override
